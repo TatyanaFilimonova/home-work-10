@@ -1,6 +1,6 @@
 # home-work-10
 
-Personal assistant with  data storage&operations implemented with MONGO. Also added LRU cache, that based  on REDIS.
+Personal assistant with  data storage&operations implemented on MONGO. Also added LRU cache, that based  on REDIS.
 
 Files:
 
