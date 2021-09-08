@@ -34,7 +34,6 @@ class Note():
         self.keywords = json['keywords']
         if type(self.keywords)!=type(''):
             self.keywords = " #".join(self.keywords)
-            
         self.created_at = json['created_at']
         self.text = json['text']        
     
@@ -73,7 +72,7 @@ def note_update(id, request):
                                 'keywords': request.form.get('Keywords'),
                                 'text': request.form.get('Text')
                                    } 
-                               )
+                           )
         return 0
     except Exception as e:
         return e
@@ -114,13 +113,13 @@ def insert_note(request):
                           { "counter_name": 'note_id' },
                           { "counter_name": 'note_id',
                             "value": counter+1}
-                             )  
+                              )  
         note_db.insert_one({
             'note_id': (counter+1),
             'keywords': request.form.get('Keywords'),
             'text': request.form.get('Text'),
             'created_at': datetime.today(),    
-            })
+                          })
         return 0
     except Exception as e:
         return e
