@@ -83,36 +83,12 @@ def insert_notes():
         
 
 if __name__ == '__main__':                          
-    #contact_db.drop_indexes()
-    #note_db.drop_indexes()
-    #rgx = re.compile('.* .*', re.IGNORECASE)
-    #counter_db.delete_many({})
-    #contact_db.delete_many({})
-    #note_db.delete_many({})
-    #insert_users()
-    #insert_notes()
-    #res = contact_db.index_information()
-    #result = contact_db.create_index([('contact_id', 1)], unique = True) 
-    #print(result)
-    #result = note_db.create_index([('note_id', 1)], unique = True) 
-    #print(result)
-    #start_date = date.today()
-    #print(d)
-    #period = request.form.get('Period')
-    period = 10
-    for contact in contact_db.find({}):
-        birthday = contact['birthday']
-        d = datetime(birthday.year, 1,1,0)
-        d1 = datetime(datetime.today().year, 1,1,0)
-       #delta = datetime((birthday.year,1,1))- datetime(datetime.today().year,1,1)
-       #print(birthday, ", ",birthday+delta)
-        delta = d1-d
-        birthday_this_year = birthday+delta
-        if birthday_this_year >= datetime.today() and  birthday_this_year<=datetime.today()+timedelta(days = period):
-            print(birthday, ", ",birthday_this_year)
-    #for res in contact_db.find({}).sort("birthday"):
-    #print(res)
-    #    $lt: ISODate("2010-05-01T00:00:00.000Z")})
-    #print(res, type(res)==type(""))
-    #print([elem for elem in counter_db.find({"counter_name":"note_id"})])
-    #print([elem for elem in contact_db.find({}).limit(1)])
+    contact_db.drop_indexes()
+    note_db.drop_indexes()
+    counter_db.delete_many({})
+    contact_db.delete_many({})
+    note_db.delete_many({})
+    insert_users()
+    insert_notes()
+    result = contact_db.create_index([('contact_id', 1)], unique = True) 
+    result = note_db.create_index([('note_id', 1)], unique = True) 
