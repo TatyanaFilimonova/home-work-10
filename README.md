@@ -4,7 +4,7 @@ Personal assistant with  data storage&operations implemented with MONGO. Also ad
 
 Files:
 
-**flask_app.py** - main module. LRU_cache used for wrapping of listener() function. Listener() does the neural prediction, and it is the most time expensive function.
+**flask_app.py** - main module. LRU_cache used for wrapping the listener() function. Listener() does the neural prediction, and it is the most time expensive function.
 
 **LRU_cache.py** - LRU cache on REDIS implementation 
 
