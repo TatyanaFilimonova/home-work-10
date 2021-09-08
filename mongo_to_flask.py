@@ -1,16 +1,14 @@
 from  flask import Flask, redirect, url_for
 from jinja2 import Template
 from flask import request
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 from datetime import date
-import time
 import os
-from sqlalchemy import create_engine, or_, update, delete
-from sqlalchemy.orm import sessionmaker
 from flask_app import contact_db, counter_db, note_db
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 import re
+
 
 class Contact():
     def __init__(self, json):
@@ -29,6 +27,7 @@ class Contact():
         self.apartment = json['address']['apartment']
         self.selebrate =""
 
+        
 class Note():
     def __init__(self, json):
         self.note_id = json['note_id']
@@ -39,6 +38,7 @@ class Note():
         self.created_at = json['created_at']
         self.text = json['text']        
     
+    
 def find_note_query(key):
     notes = []
     rgx = re.compile(f'.*{key}.*', re.IGNORECASE)
@@ -46,6 +46,7 @@ def find_note_query(key):
     for res in result:
         notes.append(Note(res))
     return notes
+
 
 def find_note_query_id(id):
     result = note_db.find_one({'note_id':int(id)})
@@ -55,12 +56,14 @@ def find_note_query_id(id):
         print(f"Result is {result}, id = {id}, type ID = {type(id)}")
         return None
 
+    
 def find_note_query_all():
     notes = []
     result = note_db.find({})
     for res in result:
         notes.append(Note(res))
     return notes
+
 
 def note_update(id, request):
     try:
@@ -75,6 +78,7 @@ def note_update(id, request):
     except Exception as e:
         return e
 
+    
 def get_all_contacts():
     contacts = []
     try:
@@ -94,6 +98,7 @@ def get_contact_details(id):
      else:
          return res
 
+    
 def delete_contact_by_id (id):
     try:
         contact_db.delete_one({'contact_id':int(id)})
@@ -101,6 +106,7 @@ def delete_contact_by_id (id):
     except Exception as e:
         return e
 
+    
 def insert_note(request):
     try:        
         counter = counter_db.find_one({"counter_name": 'note_id'},{'value':1})['value']
@@ -119,6 +125,7 @@ def insert_note(request):
     except Exception as e:
         return e
 
+    
 def delete_note_id(id):
     try:
         note_db.delete_one({'note_id':int(id)})
@@ -126,6 +133,7 @@ def delete_note_id(id):
     except Exception as e:
         return e
 
+    
 def update_contact_details(form_dict, id):
     try:
          contact_db.replace_one(
@@ -162,6 +170,7 @@ def contact_query(k):
     for res in result:
         contacts.append(Contact(res))
     return contacts
+
 
 def insert_contact(form_dict):
     try:
@@ -208,5 +217,4 @@ def get_birthdays(period):
             contact = Contact(contact)
             contact.celebrate = birthday_this_year.date()
             contacts.append(contact)
-    return contacts        
-     
+    return contacts
