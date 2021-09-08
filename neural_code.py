@@ -59,5 +59,3 @@ def get_response(intents_list, intents_json):
             result = (i['responses'],i['tag'])
             break
     return result
-
-
