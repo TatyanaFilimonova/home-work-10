@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tell to the bot - what do you wish? </title>
+</head>
+<style>
+table, th, td, tr  { 
+    border: 1px solid black;
+    border-collapse: collapse;
+    }
+
+tr:nth-child(even) {
+  background-color: #BFC9CA;
+}
+th, td {
+  padding: 5px;
+}
+</style>
+   <form method="POST" name ='bot' border = '0'>
+	   <table width = 50%>
+           <tr>			
+           <div align = 'center'> <b>Please input command for BOT: </b><div>
+           <div  align = 'center'>You could use either formal comand names or natural language requests</div>
+           <div  align = 'center'><input type="text" name="BOT command" size= 50% /></div>
+           </tr>
+           <tr>
+           <div align = 'center'><input type="submit" value="Submit"></div>
+           </tr> 
+           </table>
+   </form>
+	   <p align = 'center'><b>Bot command history</b></p>	
+	   <table width = bot.width align = 'center'>	
+	   {% for key in command_history.keys()%}
+	   <tr>
+	   <td width = 20%>{{key}}</td>
+	   <td width = 80%>{{command_history[key]}}</td>
+	   </tr> 	 
+	   {% endfor%}	
+	   <table>	
+    
+</html>           

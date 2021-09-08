@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Found contacts that has birthday </title>
+</head>
+<style> 
+table, th, td, tr  { 
+    border: 1px solid black;
+    border-collapse: collapse;
+    }
+
+th, td {
+  padding: 5px;
+}
+
+tr:nth-child(even) {
+  background-color: #BFC9CA;
+}
+</style>
+<h2 align = 'center'>Contacts with Birthday at the nearest {{days}} days</h4>
+<p align = 'center'>Click on ID to see contact details</p>
+<p align = 'center'><a href="/next_birthday">Make an other search</a></p>
+<p align = 'center'><a href="/bot-command">Return to BOT embrace</a></p>
+<table width = 50% align = 'center'>
+	<thead>
+           <tr>
+           <th width = 20%>ID</th>
+           <th width = 50%>Name</th>
+           <th width = 30%>Celebrate</th>
+           </tr>
+        </thead>   
+        <tbody>
+	{%for res in result %}
+        	<tr>
+		<td><a href =/contact_detail/{{res.contact_id}}>{{res.contact_id}}</a></td>
+       		<td>{{res.name}}</td>
+		<td>{{res.celebrate}}</td>
+		</tr>
+	{%endfor%}
+	</tbody>
+</table>
+<p> </p>
+</html>

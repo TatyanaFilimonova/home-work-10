@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>All notes from your notebook</title>
+</head>
+<style> 
+table, th, td, tr  { 
+    border: 1px solid black;
+    border-collapse: collapse;
+    }
+
+tr:nth-child(even) {
+  background-color: #BFC9CA;
+}
+th, td {
+  padding: 5px;
+}
+</style>
+<h2 align = 'center' >ALL THE NOTES I HAVE FOUND FOR YOU</h2>:
+<div align = 'center'><a href="/bot-command">Return to BOT embrace</a></div>
+<div align = 'center'>&nbsp</div>
+<table align = 'center' width = 50%>
+<tbody>
+{%for res in result %}
+        <tr>
+	<td>
+	<b>Note ID:</b> {{res.note_id}}<br>
+	<b>Keywords:</b> #{{res.keywords}}<br>
+	<b>Text:</b> {{res.text}}
+	</td>
+	</tr>
+{%endfor%}
+</tbody>
+</table>
+</html>

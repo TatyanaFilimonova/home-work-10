@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Found contacts from your adress book to edit</title>
+</head>
+<style> 
+table, th, td, tr  { 
+    border: 1px solid black;
+    border-collapse: collapse;
+    }
+
+th, td {
+  padding: 5px;
+}
+
+tr:nth-child(even) {
+  background-color: #BFC9CA;
+}
+</style>
+<h2 align = 'center'>ALL THE CONTACTS I HAVE FOUND</h4>
+<p align = 'center'>Click on ID to edit contact details</p>
+<table width = 50% align = 'center'>
+	<thead>
+           <tr>
+           <th width = 20%>ID</th>
+           <th width = 80%>Name</th>
+           </tr>
+        </thead>   
+        <tbody>
+	{%for res in result %}
+        	<tr>
+		<td><a href =/edit_contact/{{res.contact_id}}>{{res.contact_id}}</a></td>
+       		<td>{{res.name}}</td>
+		</tr>
+	{%endfor%}
+	</tbody>
+</table>
+<p> </p>
+<p><a href="/find_contact">Look for an other contact details</a></p>
+<p><a href="/bot-command">Return to BOT embrace</a></p>
+</html>

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Found notes to delete</title>
+</head>
+<style> 
+table, th, td, tr  { 
+    border: 1px solid black;
+    border-collapse: collapse;
+    }
+
+tr:nth-child(even) {
+  background-color: #BFC9CA;
+}
+
+th, td {
+  padding: 5px;
+}
+</style>
+
+<h4 align = 'center'>ALL THE NOTES I HAVE FOUND</h4>
+<p align = 'center'><b>Click on the note ID if you would like to delete it</b></p>
+<p align = 'center'><a href="/bot-command">Return to BOT embrace</a></p>
+<table align = 'center' width = 50%>
+	<tbody>
+	{%for res in result %}
+        	{% if loop.index % 2 == 0 %}
+			<tr bgcolor = '#BFC9CA'>
+		{% else %}
+			<tr bgcolor = '#ffffff'>
+		{% endif %}
+		<td><a href =/delete_note/{{res.note_id}}>Note ID: {{res.note_id}}</a>
+       		    <p><b>Keywords:</b> {{res.keywords}}</p>
+	            <p>{{res.text}}</p> 				
+		</td>
+		</tr>
+	{%endfor%}
+	</tbody>
+</table>
+</html>

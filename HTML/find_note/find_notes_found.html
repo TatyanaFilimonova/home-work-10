@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Found some notes</title>
+</head>
+<style> 
+table, th, td, tr  { 
+    border: 1px solid black;
+    border-collapse: collapse;
+    }
+
+tr:nth-child(even) {
+  background-color: #BFC9CA;
+}
+
+th, td {
+  padding: 5px;
+}
+</style>
+
+<h4 align = 'center'>ALL THE NOTES I HAVE FOUND</h4>
+<p align = 'center'><b>Click on the button if you would like to delete or edit some</b></p>
+<p align = 'center'><a href="/bot-command">Return to BOT embrace</a></p>
+<table align = 'center' width = 50%>
+	<tbody>
+	{%for res in result %}
+        	<tr>
+		  <td>
+		    <p><b>Note ID:</b>  {{res.note_id}}</p>
+       		    <p><b>Keywords:</b> {{res.keywords}}</p>
+	            <p>{{res.text}}</p> 
+		        <form action="/save_note/{{res.note_id}}"><button name="edit" width = 200>Edit note &nbsp &nbsp</button></form>
+		    <form action="/delete_note/{{res.note_id}}"><button name="delete" width = 200>Delete note</button></form>
+		  </td>
+		</tr>
+	{%endfor%}
+	</tbody>
+</table>
+</html>

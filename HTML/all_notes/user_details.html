@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User details</title>
+</head>
+<h4 align = "center">User details</h4>
+<table bgcolor ='#BFC9CA' align ='center'>
+<thead>
+           <tr>
+           <th align = "left" width="100">Field</th>
+           <th align = "left" width="500">Value</th>
+            </tr>
+</thead> 
+<tbody>
+<tr>
+<td>ID</td><td>{{contact.contact_id}}</td>
+</tr>
+<tr>
+<td>Name</td><td>{{contact.name}}</td>
+</tr>
+<tr>
+<td>Birthday</td><td>{{contact.birthday}}</td>
+</tr>
+<tr>
+<td>Email</td><td>{{email.email}}</td>
+</tr>
+<tr>
+<td><b>Phones</b></td><td></td>
+</tr>
+{%for item in phone%}
+<tr>
+<td></td><td>{{item.phone}}</td>
+</tr>
+{%endfor%}
+<tr>
+<td><b>Address</b></td><td></td>
+</tr>
+<tr>
+<td>ZIP</td><td>{{address.zip}}</td>
+</tr>
+<tr>
+<td>Country</td><td>{{address.country}}</td>
+</tr>
+<tr>
+<td>Region</td><td>{{address.region}}</td>
+</tr>
+<tr>
+<td>City</td><td>{{address.city}}</td>
+</tr>
+<tr>
+<td>Street</td><td>{{address.street}}</td>
+</tr>
+<tr>
+<td>House</td><td>{{address.house}}</td>
+</tr>
+<tr>
+<td>Apartment</td><td>{{address.apartment}}</td>
+</tr>
+</tbody>
+</table>
+<p align = 'center'><a href= /show_all_contacts>See one more contact</a></p>
+<p></p>
+<p align = 'center'><a href= /bot-command>Return to BOT embrace</a></p>
