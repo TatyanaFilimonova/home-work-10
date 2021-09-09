@@ -208,24 +208,21 @@ def get_birthdays(period):
     contacts = []
     max_id = counter_db.find_one({"counter_name": 'contact_id'},{'value':1})['value']
     contacts = []
-    counter = 0
-    for days_ in range(period):
-        date_=datetime.today()+timedelta(days = days_ )
-        result= contact_db.aggregate([{
+    result= contact_db.aggregate([{
                                  "$match":
                                  {"$expr":
-                                       {'$eq':
+                                       {'$in':
                                          [{'$substr':
                                            [{"$dateToString":
                                              {"format": "%d.%m.%Y", "date": "$birthday"}}, 0 ,5]},
-                                               (date_).strftime("%d.%m.%Y")[0:5]]}
+                                               [(datetime.today()+timedelta(days =  i)).strftime("%d.%m.%Y")[0:5] for i in range(0,period)]]}
                                            } 
-                                           
                                  }
                                ])
-        
-        for r in result:
-           contact_ = Contact(r)
-           contact_.celebrate = r['birthday'].date().strftime('%d.%m.%Y')
-           contacts.append(contact_) 
-    return contacts       
+    for r in result:
+        contact_ = Contact(r)
+        contact_.celebrate = r['birthday'].date().strftime('%d.%m.%Y')[0:5]
+        contacts.append(contact_)
+        datetime.strptime('Jun 1 2005  1:33PM', '%b %d %Y %I:%M%p')
+        contacts = sorted(contacts, key = lambda x: datetime.strptime(x.birthday[0:6]+str(datetime.today().year),'%d.%m.%Y'))
+    return contacts        
