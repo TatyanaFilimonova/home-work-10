@@ -206,17 +206,21 @@ def insert_contact(form_dict):
 
 def get_birthdays(period):
     contacts = []
+    max_id = counter_db.find_one({"counter_name": 'contact_id'},{'value':1})['value']
+    contacts = []
+    counter = 0
     while True:
-        contact = contact_db.find_one({})
+        contact = contact_db.find_one({"contact_id":counter})
+        counter+=1
         birthday = contact['birthday']
         d = datetime(birthday.year, 1,1,0)
         d1 = datetime(datetime.today().year, 1,1,0)
         delta = d1-d
         birthday_this_year = birthday+delta
+        temp_contact = Contact(contact)
         if birthday_this_year >= datetime.today() and  birthday_this_year<=datetime.today()+timedelta(days = period):
-            contact = Contact(contact)
-            contact.celebrate = birthday_this_year.date()
-            contacts.append(contact)
-        if contact['contact_id']==counter_db.find_one({"counter_name": 'contact_id'},{'value':1}):
+            temp_contact.celebrate = birthday_this_year.date()
+            contacts.append(temp_contact)
+        if temp_contact.contact_id == max_id:
             break
-    return contacts  
+    return contacts     
