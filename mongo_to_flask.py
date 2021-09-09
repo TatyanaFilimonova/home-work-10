@@ -206,8 +206,6 @@ def insert_contact(form_dict):
 
 def get_birthdays(period):
     contacts = []
-    max_id = counter_db.find_one({"counter_name": 'contact_id'},{'value':1})['value']
-    contacts = []
     result= contact_db.aggregate([{
                                  "$match":
                                  {"$expr":
