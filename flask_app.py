@@ -227,12 +227,17 @@ def add_contact():
                return html_error(res)
         else:
             pass
-    try:  
-       with open('html/add_user/add_user.html', 'r') as file:
-          t = Template(file.read())
-          return t.render(form_dict = form_dict)
-    except:
-       return html_error(e)
+    else:
+       return render_template('html/add_user/add_user.html', form_dict = form_dict)
+  
+
+def render_template(path, **kwargs):
+   try:  
+      with open( path, 'r') as file:
+         t = Template(file.read())
+         return t.render(**kwargs)
+   except Exception as e:
+         return html_error(e)  
 
     
 @app.route('/edit_contact', methods=['GET', 'POST'])
@@ -242,79 +247,58 @@ def edit_contact():
         keywords = clean_search_str(request.form.get('Keywords'))
         for k in [keyword for keyword in keywords.strip().split(" ")]:
             results.extend(contact_query(k))
-        try:
-            with open('html/edit_user/user_found.html', 'r') as file:
-                 t = Template(file.read())
-                 return t.render(result = results)
-        except Exception as e:
-             return html_error(e)  
-    else:    
-        try:
-            with open('html/find_user/find_user.html', 'r') as file:
-                t = Template(file.read())
-                return t.render()
-        except Exception as e:
-                 return html_error(e)
+        return render_template('html/edit_user/user_found.html', result = results)   
+    else:
+        return render_template('html/find_user/find_user.html')           
+        
 
 @app.route('/edit_contact/<id>', methods=['GET', 'POST'])
 def edit_contact_(id):
-     form_dict = form_dict_temp
-     if request.method == 'POST':
-        form_dict = validate_contact_data(request, form_dict)
-        valid_list = [element['valid'] for element in form_dict.values()]
-        if False not in  valid_list:
-            res= update_contact_details(form_dict, id)   
-            if res == 0:
-               return f'''<h3 align = 'center'>Contact successfully saved with ID = {id}</h2>
+   form_dict = form_dict_temp
+   if request.method == 'POST':
+      form_dict = validate_contact_data(request, form_dict)
+      valid_list = [element['valid'] for element in form_dict.values()]
+      if False not in  valid_list:
+         res= update_contact_details(form_dict, id)   
+         if res == 0:
+            return f'''<h3 align = 'center'>Contact successfully saved</h2>
                            <p></p> 
                            <p align = 'center'><a href="/edit_contact">Edit one more contact</a></p>
                            <p></p>
                            <p align = 'center'><a href="/bot-command">Return to BOT embrace</a></p>
                            '''
-            else:
+         else:
                return html_error(res)
-        else:
-             with open('html/edit_user/edit_user.html', 'r') as file:
-                 t = Template(file.read())
-                 return t.render(form_dict = form_dict)
-     else:
-         contact = get_contact_details(id)
-         bd = str(contact.birthday).split("-")   
-         form_dict["Name"]["value"]= contact.name
-         form_dict["Birthday"]["value"] = str(contact.birthday)
-         form_dict["Email"]["value"] = contact.email
-         form_dict["Phone"]["value"] =  ", ".join([ph for ph in contact.phone])   
-         form_dict["ZIP"]["value"] = contact.zip
-         form_dict["Country"]["value"] = contact.country
-         form_dict["Region"]["value"] = contact.region
-         form_dict["City"]["value"] = contact.city
-         form_dict["Street"]["value"] = contact.street
-         form_dict["House"]["value"] = contact.house
-         form_dict["Apartment"]["value"] = contact.apartment
-         with open('html/edit_user/edit_user.html', 'r') as file:
-             t = Template(file.read())
-             return t.render(form_dict = form_dict)
+      else:
+            return render_template('html/edit_user/edit_user.html', form_dict = form_dict)
+
+   else:
+      contact = get_contact_details(id)
+      bd = str(contact.birthday).split("-")   
+      form_dict["Name"]["value"]= contact.name
+      form_dict["Birthday"]["value"] = str(contact.birthday)
+      form_dict["Email"]["value"] = contact.email
+      form_dict["Phone"]["value"] =  ", ".join([ph for ph in contact.phone])   
+      form_dict["ZIP"]["value"] = contact.zip
+      form_dict["Country"]["value"] = contact.country
+      form_dict["Region"]["value"] = contact.region
+      form_dict["City"]["value"] = contact.city
+      form_dict["Street"]["value"] = contact.street
+      form_dict["House"]["value"] = contact.house
+      form_dict["Apartment"]["value"] = contact.apartment
+      return render_template('html/edit_user/edit_user.html', form_dict = form_dict)
+
 
 @app.route('/find_contact', methods=['GET', 'POST'])
 def find_contact():
-    results = []
-    if request.method == 'POST':
-        keywords = clean_search_str(request.form.get('Keywords'))
-        for k in [keyword for keyword in keywords.strip().split(" ")]:
-            results.extend(contact_query(k))
-        try:
-            with open('html/find_user/user_found.html', 'r') as file:
-                 t = Template(file.read())
-                 return t.render(result = results)
-        except Exception as e:
-             return html_error(e)        
-
-    try:
-        with open('html/find_user/find_user.html', 'r') as file:
-            t = Template(file.read())
-            return t.render()
-    except Exception as e:
-            return html_error(e)
+   results = []
+   if request.method == 'POST':
+      keywords = clean_search_str(request.form.get('Keywords'))
+      for k in [keyword for keyword in keywords.strip().split(" ")]:
+         results.extend(contact_query(k))
+      return render_template('html/find_user/user_found.html', result = results)    
+   else:
+      return render_template('html/find_user/find_user.html')
 
 
 def clean_search_str(keywords):
@@ -334,45 +318,29 @@ def clean_search_str(keywords):
         
 @app.route('/find_notes', methods=['GET', 'POST'])
 def find_notes():
-    res_list = []
-    if request.method == 'POST':
-        keywords = clean_search_str(request.form.get('Keywords'))
-        for k in [keyword.strip() for keyword in keywords.split(",")]:
-           result = find_note_query(k)
-        try:
-            with open('html/find_note/find_notes_found.html', 'r') as file:
-                t = Template(file.read())
-                return t.render(result = result)
-        except Exception as e:
-                 return html_error(e)
-    else:    
-        try:
-            with open('html/find_note/find_notes_search.html', 'r') as file:
-                t = Template(file.read())
-                return t.render()
-        except Exception as e:
-                 return html_error(e)
+   results = []
+   if request.method == 'POST':
+      keywords = clean_search_str(request.form.get('Keywords'))
+      for k in [keyword.strip() for keyword in keywords.split(",")]:
+         res = find_note_query(k)
+         results.extend(res)
+      return render_template('html/find_note/find_notes_found.html', result = results)   
+   else:
+      return render_template('html/find_note/find_notes_search.html')
+       
 
 @app.route('/show_all_contacts', methods=['GET', 'POST'])
 def show_all_contacts():
-    if request.method == 'POST':
-        return redirect('/bot-command')
-    else:
-        try:
-            result = get_all_contacts()
-        except Exception as e:
-            return html_error(e)
-            
-        try:
-            with open('html/all_contacts/all_contacts.html', 'r') as file:
-                t = Template(file.read())
-                return t.render(count = 0, result = result)
-        except Exception as e:
-            return html_error(e)
+   if request.method == 'POST':
+      return redirect('/bot-command')
+   else:
+      result = get_all_contacts()
+      return render_template('html/all_contacts/all_contacts.html', result = result) 
+        
         
 
 def html_error(error):
-    return f'''<html>
+   return f'''<html>
            <p><b>There was an error while your request handled</b><p>
            <p>The details of error you could find below.</p>
            <p>Please return to the BOT section and try another request</p>
@@ -383,125 +351,92 @@ def html_error(error):
 
 @app.route('/contact_detail/<id>', methods=['GET', 'POST'])
 def contact_detail(id):
-     contact = get_contact_details(id)
-     try:
-         with open('html/user_details/user_details.html', 'r') as file:
-             t = Template(file.read())
-             return t.render(contact = contact, phone = contact.phone, email = contact.email, address = contact)
-     except Exception as e:
-             return html_error(e)
+   contact = get_contact_details(id)
+   return render_template('html/user_details/user_details.html',
+                            contact = contact,
+                            phone = contact.phone,
+                            email = contact.email,
+                            address = contact,
+                            url='/find_contact')  
+     
          
 @app.route('/show_all_notes', methods=['GET', 'POST'])
 def show_all_notes ():
-    if request.method == 'POST':
-        return redirect('/bot-command')
-    else:
-        result =find_note_query_all()
-        try:
-            with open('html/all_notes/all_notes.html', 'r') as file:
-                t = Template(file.read())
-                return t.render(result = result)
-        except Exception as e:
-             return html_error(e)
-                    
+   if request.method == 'POST':
+      return redirect('/bot-command')
+   else:
+      result =find_note_query_all()
+      return render_template('html/all_notes/all_notes.html',result = result)
+                            
             
 @app.route('/help_', methods=['GET', 'POST'])
 def help_():
-    try:
-        with open('html/help/help.html', 'r') as file:
-                t = Template(file.read())
-                return t.render(exec_command = exec_command)
-    except Exception as e:
-             return html_error(e)
-
+   return render_template('html/help/help.html', exec_command = exec_command)
+    
 
 @app.route('/add_note', methods=['GET', 'POST'])
 def add_note():
-    if request.method == 'POST':
-        res = insert_note(request)
-        if res ==0:
-            return f'''<h3>Note successfully saved </h2>
+   if request.method == 'POST':
+      res = insert_note(request)
+      if res ==0:
+         return f'''<h3>Note successfully saved </h2>
                        <p></p> 
                        <p align = 'center'><a href="./add_note">Add one more note</a></p>
                        <p></p>
                        <p align = 'center'><a href="./bot-command">Return to BOT embrace</a></p>'''
-        else:
-            return html_error(res)
-    with open('html/add_note/add_note.html', 'r') as file:
-         t = Template(file.read())
-         return t.render()
+      else:
+         return html_error(res)
+   else:
+      return render_template('html/add_note/add_note.html')      
 
 
 @app.route('/edit_note', methods=['GET', 'POST'])
 def edit_note():
-    res_list = []
-    if request.method == 'POST':
-        keywords = clean_search_str(request.form.get('Keywords'))
-        for k in [keyword.strip() for keyword in keywords.split(",")]:
-            result = find_note_query(k)
-        try:
-            with open('html/edit_notes/edit_notes_found.html', 'r') as file:
-                t = Template(file.read())
-                return t.render(result = result)
-        except Exception as e:
-                 return html_error(e)
-    else:    
-        try:
-            with open('html/edit_notes/edit_notes_search.html', 'r') as file:
-                t = Template(file.read())
-                return t.render()
-        except Exception as e:
-                 return html_error(e)
+   res_list = []
+   if request.method == 'POST':
+      keywords = clean_search_str(request.form.get('Keywords'))
+      for k in [keyword.strip() for keyword in keywords.split(",")]:
+         result = find_note_query(k)
+      return render_template('html/edit_notes/edit_notes_found.html', result = result) 
+   else:    
+      return render_template('html/edit_notes/edit_notes_search.html')  
 
+        
 @app.route('/save_note/<id>', methods=['GET', 'POST'])
 def save_note(id):
-    if request.method == 'POST':
-        res = note_update(id, request) 
-        if  res== 0:
-           return f'''<h3>Note successfully updated</h2>
+   if request.method == 'POST':
+      res = note_update(id, request) 
+      if  res== 0:
+         return f'''<h3>Note successfully updated</h2>
                    <p></p> 
                    <p align = 'center'><a href="/add-note">Add one more note</a></p>
                    <p></p>
                    <p align = 'center'><a href="/bot-command">Return to BOT embrace</a></p>                   
                    '''
-        else:
-            return html_error(res) 
-    else:
-        result =find_note_query_id(id)
-        try:
-            with open('html/edit_notes/edit_notes_save.html', 'r') as file:
-                t = Template(file.read())
-                return t.render(res = result)
-        except Exception as e:
-                 return html_error(e)
-            
+      else:
+         return html_error(res) 
+   else:
+      result =find_note_query_id(id)
+      return render_template('html/edit_notes/edit_notes_save.html', res = result)        
+                    
     
 @app.route('/delete_contact', methods=['GET', 'POST'])
 def delete_contact():
-    results = []
-    if request.method == 'POST':
-        keywords = clean_search_str(request.form.get('Keywords'))
-        for k in [keyword for keyword in keywords.strip().split(" ")]:
-            results.extend(contact_query(k))
-        try:
-            with open('html/delete_user/user_to_delete.html', 'r') as file:
-                 t = Template(file.read())
-                 return t.render(result = results)
-        except Exception as e:
-             return html_error(e)        
+   results = []
+   if request.method == 'POST':
+      keywords = clean_search_str(request.form.get('Keywords'))
+      for k in [keyword for keyword in keywords.strip().split(" ")]:
+         results.extend(contact_query(k))
+         return render_template('html/delete_user/user_to_delete.html', result = results) 
+   else:
+      return render_template('html/find_user/find_user.html')
 
-    try:
-        with open('html/find_user/find_user.html', 'r') as file:
-            t = Template(file.read())
-            return t.render()
-    except Exception as e:
-            return html_error(e)
-
+      
 @app.route('/delete_contact/<id>', methods=['GET', 'POST'])
 def contact_delete_(id):
-    res = delete_contact_by_id (id)
-    if res ==0: 
-        return f'''
+   res = delete_contact_by_id (id)
+   if res ==0: 
+      return f'''
                <html>
                <h2 align = 'center'> Contact ID = {id} succesfully deleted</h2>
                <p></p> 
@@ -511,37 +446,28 @@ def contact_delete_(id):
                
                </html>
                '''
-    else:
-        return html_error(res)
+   else:
+      return html_error(res)
 
           
 
 @app.route('/delete_note', methods=['GET', 'POST'])
 def delete_note():
-    res_list = []
-    if request.method == 'POST':
-        keywords = clean_search_str(request.form.get('Keywords'))
-        for k in [keyword.strip() for keyword in keywords.split(",")]:
-           result = find_note_query(k)
-        try:
-            with open('html/delete_note/delete_notes_found.html', 'r') as file:
-                t = Template(file.read())
-                return t.render(result = result)
-        except Exception as e:
-                 return html_error(e)
-    else:    
-        try:
-            with open('html/delete_note/delete_notes_search.html', 'r') as file:
-                t = Template(file.read())
-                return t.render()
-        except Exception as e:
-                 return html_error(e)
+   res_list = []
+   if request.method == 'POST':
+      keywords = clean_search_str(request.form.get('Keywords'))
+      for k in [keyword.strip() for keyword in keywords.split(",")]:
+         result = find_note_query(k)
+         return render_template('html/delete_note/delete_notes_found.html', result = result)  
+   else:
+      return render_template('html/delete_note/delete_notes_search.html') 
+        
 
 @app.route('/delete_note/<id>', methods=['GET', 'POST'])
 def note_delete_(id):
-    res = delete_note_id(id)
-    if res == 0:
-        return f'''
+   res = delete_note_id(id)
+   if res == 0:
+      return f'''
                <html>
                <h2 align = 'center'> Note ID = {id} succesfully deleted</h2>
                <p></p> 
@@ -550,8 +476,8 @@ def note_delete_(id):
                <p><a href="/bot-command">Return to BOT embrace</a></p>
                </html>
                '''
-    else:
-        return html_error(res)                
+   else:
+      return html_error(res)                
 
 
 @app.route('/sort_notes', methods=['GET', 'POST'])
@@ -565,13 +491,8 @@ def sort_folder():
 
 
 def get_period(message=""):
-   try:
-      with open('html/list_birthday/find_user.html', 'r') as file:
-         t = Template(file.read())
-         return t.render(err_message = message)
-   except Exception as e:
-            return html_error(e)
-
+   return render_template('html/list_birthday/find_user.html', err_message = message)
+   
 
 @app.route('/next_birthday', methods=['GET', 'POST'])
 def next_birthday():
@@ -581,13 +502,10 @@ def next_birthday():
          period = int(request.form.get('Period'))
       except:
          return get_period("You could use numbers only")  
-      try:
-         res = get_birthdays(period)
-         with open('html/list_birthday/user_found.html', 'r') as file:
-            t = Template(file.read())
-            return t.render(days = request.form.get('Period'), result = res)
-      except Exception as e:
-                return html_error(e)
+      res = get_birthdays(period)
+      return render_template('html/list_birthday/user_found.html',
+                                days = request.form.get('Period'),
+                                result = res)
    else:
       return get_period()   
         
@@ -613,45 +531,32 @@ exec_command = {
 
 @LRU_cache (max_len = 10)         
 def listener(message):
-    ints = predict_class(message)
-    res = get_response(ints, intents)
-    return res[1]
+   ints = predict_class(message)
+   res = get_response(ints, intents)
+   return res[1]
 
 command_history = {"command":"response"}
 
 @app.route('/', methods=['GET', 'POST'])
 def start_page():
- return redirect('/bot-command')   
+   return redirect('/bot-command')   
 
 @app.route('/bot-command', methods=['GET', 'POST'])
 def form_example():
-    # handle the POST request
-    if request.method == 'POST':
-        command = request.form.get('BOT command')
-        user_request_detailed = listener(command)
-        redirect_to = "_".join(user_request_detailed.split(" "))
-        if redirect_to == 'help':
-            redirect_to+="_"
-        elif redirect_to == 'hello':
-            redirect_to+="_"    
-        command_history[command]=user_request_detailed    
-        return redirect(url_for(redirect_to))
-                  
-
-    # otherwise handle the GET request
-    try:
-            with open('html/bot_page.html', 'r') as file:
-                t = Template(file.read())
-                return t.render(command_history = command_history)
-    except Exception as e:
-                 return html_error(e)
-   
-'''MONGO_DB = os.environ.get('MONGOBD_HOST', "localhost")
-client = MongoClient('mongodb://'+MONGO_DB+':27017/')
-db = client.contact_book
-contact_db = db.contact
-counter_db = db.counter
-note_db=db.note'''
-
+   # handle the POST request
+   if request.method == 'POST':
+      command = request.form.get('BOT command')
+      user_request_detailed = listener(command)
+      redirect_to = "_".join(user_request_detailed.split(" "))
+      if redirect_to == 'help':
+         redirect_to+="_"
+      elif redirect_to == 'hello':
+         redirect_to+="_"    
+      command_history[command]=user_request_detailed    
+      return redirect(url_for(redirect_to))
+   # otherwise handle the GET request
+   else:
+      return render_template('html/bot_page.html',command_history = command_history)
+    
 if __name__ == "__main__":
      app.run(debug=True)
