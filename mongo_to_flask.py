@@ -206,14 +206,18 @@ def insert_contact(form_dict):
 
 def get_birthdays(period):
     contacts = []
-    for contact in contact_db.find({}):
-        birthday = contact['birthday']
-        d = datetime(birthday.year, 1,1,0)
-        d1 = datetime(datetime.today().year, 1,1,0)
-        delta = d1-d
-        birthday_this_year = birthday+delta
-        if birthday_this_year >= datetime.today() and  birthday_this_year<=datetime.today()+timedelta(days = period):
-            contact = Contact(contact)
-            contact.celebrate = birthday_this_year.date()
-            contacts.append(contact)
-    return contacts
+    while True:
+        contact = contact_db.find_one({})
+        if contact!= []:
+            birthday = contact['birthday']
+            d = datetime(birthday.year, 1,1,0)
+            d1 = datetime(datetime.today().year, 1,1,0)
+            delta = d1-d
+            birthday_this_year = birthday+delta
+            if birthday_this_year >= datetime.today() and  birthday_this_year<=datetime.today()+timedelta(days = period):
+                contact = Contact(contact)
+                contact.celebrate = birthday_this_year.date()
+                contacts.append(contact)
+        else:
+            break
+    return contacts 
