@@ -4,7 +4,7 @@ from flask import request
 from datetime import datetime, timedelta, time
 from datetime import date
 import os
-from flask_app import contact_db, counter_db, note_db
+from db import MONGO_DB, db, contact_db, counter_db, note_db
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 import re
