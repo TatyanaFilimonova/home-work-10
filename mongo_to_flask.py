@@ -209,18 +209,23 @@ def get_birthdays(period):
     max_id = counter_db.find_one({"counter_name": 'contact_id'},{'value':1})['value']
     contacts = []
     counter = 0
-    while True:
-        contact = contact_db.find_one({"contact_id":counter})
-        counter+=1
-        birthday = contact['birthday']
-        d = datetime(birthday.year, 1,1,0)
-        d1 = datetime(datetime.today().year, 1,1,0)
-        delta = d1-d
-        birthday_this_year = birthday+delta
-        temp_contact = Contact(contact)
-        if birthday_this_year >= datetime.today() and  birthday_this_year<=datetime.today()+timedelta(days = period):
-            temp_contact.celebrate = birthday_this_year.date()
-            contacts.append(temp_contact)
-        if temp_contact.contact_id == max_id:
-            break
-    return contacts     
+    for days_ in range(period):
+        date_=datetime.today()+timedelta(days = days_ )
+        result= contact_db.aggregate([{
+                                 "$match":
+                                 {"$expr":
+                                       {'$eq':
+                                         [{'$substr':
+                                           [{"$dateToString":
+                                             {"format": "%d.%m.%Y", "date": "$birthday"}}, 0 ,5]},
+                                               (date_).strftime("%d.%m.%Y")[0:5]]}
+                                           } 
+                                           
+                                 }
+                               ])
+        
+        for r in result:
+           contact_ = Contact(r)
+           contact_.celebrate = r['birthday'].date().strftime('%d.%m.%Y')
+           contacts.append(contact_) 
+    return contacts       
