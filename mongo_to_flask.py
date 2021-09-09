@@ -223,6 +223,5 @@ def get_birthdays(period):
         contact_ = Contact(r)
         contact_.celebrate = r['birthday'].date().strftime('%d.%m.%Y')[0:5]
         contacts.append(contact_)
-        datetime.strptime('Jun 1 2005  1:33PM', '%b %d %Y %I:%M%p')
         contacts = sorted(contacts, key = lambda x: datetime.strptime(x.birthday[0:6]+str(datetime.today().year),'%d.%m.%Y'))
     return contacts        
