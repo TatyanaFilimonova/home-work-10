@@ -13,6 +13,8 @@ from mongo_to_flask import *
 from LRU_cache import *
 from pymongo import MongoClient
 from bson.objectid import ObjectId
+from db import MONGO_DB, db, contact_db, counter_db, note_db
+
 
 import warnings 
 warnings.filterwarnings('ignore')
@@ -577,10 +579,10 @@ def next_birthday():
    if request.method == 'POST':
       try:
          period = int(request.form.get('Period'))
-         res = get_birthdays(period)
       except:
          return get_period("You could use numbers only")  
       try:
+         res = get_birthdays(period)
          with open('html/list_birthday/user_found.html', 'r') as file:
             t = Template(file.read())
             return t.render(days = request.form.get('Period'), result = res)
@@ -644,12 +646,12 @@ def form_example():
     except Exception as e:
                  return html_error(e)
    
-MONGO_DB = os.environ.get('MONGOBD_HOST', "localhost")
+'''MONGO_DB = os.environ.get('MONGOBD_HOST', "localhost")
 client = MongoClient('mongodb://'+MONGO_DB+':27017/')
 db = client.contact_book
 contact_db = db.contact
 counter_db = db.counter
-note_db=db.note
+note_db=db.note'''
 
 if __name__ == "__main__":
      app.run(debug=True)
