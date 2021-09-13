@@ -13,8 +13,11 @@ from mongo_to_flask import *
 from LRU_cache import *
 from pymongo import MongoClient
 from bson.objectid import ObjectId
-from db import MONGO_DB, db, contact_db, counter_db, note_db
+from db_mongo import MONGO_DB, db, contact_db, counter_db, note_db
+from db_postgres import session
 
+from contacts_data_classes import *
+from notes_data_classes import *
 
 import warnings 
 warnings.filterwarnings('ignore')
@@ -22,6 +25,7 @@ warnings.filterwarnings('ignore')
 app = Flask(__name__)
 
 #####routes section############################
+
 
 @app.route('/hello_', methods=['GET', 'POST'])
 def hello_():
@@ -50,18 +54,22 @@ def Name_checker(name):
 def Birthday_checker(birthday):
     error_message  = ""
     valid = True
-    if re.search('\d{2}\.\d{2}\.\d{4}', birthday) == None:
-        error_message  = "Use dd.mm.yyyy format"
-        valid = False
+    if birthday!="":
+       if re.search('\d{2}\.\d{2}\.\d{4}', birthday) == None:
+          error_message  = "Use dd.mm.yyyy format"
+          valid = False
+       else:
+           birthday = datetime.strptime(birthday, '%d.%m.%Y')
     else:
-        birthday = datetime.strptime(birthday, '%d.%m.%Y')
+       birthday = None
     return valid, error_message, birthday
 
 def Phone_checker(phones):
     error_message  = ""
     valid = True
+    phones = clean_phone_str(phones);
     for phone in phones.split(","):
-        if re.search('\+{0,1}\d{9,13}', phone.strip()) == None:
+       if re.search('\+{0,1}\d{9,13}', phone.strip()) == None:
             error_message  = """Phone should have format: '[+] XXXXXXXXXXXX' (9-12 digits), phones separated by ','"""
             valid = False
     return valid, error_message, phones
@@ -215,20 +223,14 @@ def add_contact():
         form_dict = validate_contact_data(request, form_dict)
         valid_list = [element['valid'] for element in form_dict.values()]
         if False not in  valid_list:
-            res = insert_contact(form_dict)
+            res = contact_book.insert_contact(Form_dict_contact(form_dict))
             if res == 0:
-               return f'''<h3>Contact successfully saved</h2>
-                       <p></p> 
-                       <p align = 'center'><a href="./add_contact">Add one more contact</a></p>
-                       <p></p>
-                       <p align = 'center'><a href="./bot-command">Return to BOT embrace</a></p>                 
-                       '''
+               return render_template('html/add_user/OK.html')
             else:
                return html_error(res)
         else:
             pass
-    else:
-       return render_template('html/add_user/add_user.html', form_dict = form_dict)
+    return render_template('html/add_user/add_user.html', form_dict = form_dict)
   
 
 def render_template(path, **kwargs):
@@ -246,7 +248,7 @@ def edit_contact():
     if request.method == 'POST':
         keywords = clean_search_str(request.form.get('Keywords'))
         for k in [keyword for keyword in keywords.strip().split(" ")]:
-            results.extend(contact_query(k))
+            results.extend(contact_book.get_contacts(k))
         return render_template('html/edit_user/user_found.html', result = results)   
     else:
         return render_template('html/find_user/find_user.html')           
@@ -259,24 +261,18 @@ def edit_contact_(id):
       form_dict = validate_contact_data(request, form_dict)
       valid_list = [element['valid'] for element in form_dict.values()]
       if False not in  valid_list:
-         res= update_contact_details(form_dict, id)   
+         res= contact_book.update_contact(id, Form_dict_contact(form_dict))   
          if res == 0:
-            return f'''<h3 align = 'center'>Contact successfully saved</h2>
-                           <p></p> 
-                           <p align = 'center'><a href="/edit_contact">Edit one more contact</a></p>
-                           <p></p>
-                           <p align = 'center'><a href="/bot-command">Return to BOT embrace</a></p>
-                           '''
+            return render_template('html/edit_user/OK.html')
          else:
                return html_error(res)
       else:
             return render_template('html/edit_user/edit_user.html', form_dict = form_dict)
 
    else:
-      contact = get_contact_details(id)
-      bd = str(contact.birthday).split("-")   
+      contact = contact_book.get_contact_details(id)
       form_dict["Name"]["value"]= contact.name
-      form_dict["Birthday"]["value"] = str(contact.birthday)
+      form_dict["Birthday"]["value"] = contact.birthday
       form_dict["Email"]["value"] = contact.email
       form_dict["Phone"]["value"] =  ", ".join([ph for ph in contact.phone])   
       form_dict["ZIP"]["value"] = contact.zip
@@ -295,7 +291,9 @@ def find_contact():
    if request.method == 'POST':
       keywords = clean_search_str(request.form.get('Keywords'))
       for k in [keyword for keyword in keywords.strip().split(" ")]:
-         results.extend(contact_query(k))
+         for res in contact_book.get_contacts(k):
+            if res not in results:
+               results.append(res)
       return render_template('html/find_user/user_found.html', result = results)    
    else:
       return render_template('html/find_user/find_user.html')
@@ -314,6 +312,20 @@ def clean_search_str(keywords):
             .replace("'\'", "\\")
              )
    return keywords
+
+def clean_phone_str(phone):
+   phone = (
+     phone.replace("-", "")
+            .replace("{", "")
+            .replace("}", "")
+            .replace("[", "")
+            .replace("]", "")
+            .replace("(", "")
+            .replace(")", "")
+            .replace(".", "")
+            .replace(" ", "")
+             )
+   return phone
          
         
 @app.route('/find_notes', methods=['GET', 'POST'])
@@ -322,8 +334,9 @@ def find_notes():
    if request.method == 'POST':
       keywords = clean_search_str(request.form.get('Keywords'))
       for k in [keyword.strip() for keyword in keywords.split(",")]:
-         res = find_note_query(k)
-         results.extend(res)
+         for res in note_book.get_notes(k):
+            if res not in results:
+               results.append(res)
       return render_template('html/find_note/find_notes_found.html', result = results)   
    else:
       return render_template('html/find_note/find_notes_search.html')
@@ -334,24 +347,19 @@ def show_all_contacts():
    if request.method == 'POST':
       return redirect('/bot-command')
    else:
-      result = get_all_contacts()
+      result = contact_book.get_all_contacts()
       return render_template('html/all_contacts/all_contacts.html', result = result) 
         
         
 
 def html_error(error):
-   return f'''<html>
-           <p><b>There was an error while your request handled</b><p>
-           <p>The details of error you could find below.</p>
-           <p>Please return to the BOT section and try another request</p>
-           <p>{error}</p>
-           <p><a href="./bot-command">Return to BOT embrace</a></p>
-           </html>'''
+   return render_template('html/error.html', error = error)
+
 
 
 @app.route('/contact_detail/<id>', methods=['GET', 'POST'])
 def contact_detail(id):
-   contact = get_contact_details(id)
+   contact = contact_book.get_contact_details(id)
    return render_template('html/user_details/user_details.html',
                             contact = contact,
                             phone = contact.phone,
@@ -365,7 +373,7 @@ def show_all_notes ():
    if request.method == 'POST':
       return redirect('/bot-command')
    else:
-      result =find_note_query_all()
+      result =note_book.get_all_notes()
       return render_template('html/all_notes/all_notes.html',result = result)
                             
             
@@ -377,13 +385,9 @@ def help_():
 @app.route('/add_note', methods=['GET', 'POST'])
 def add_note():
    if request.method == 'POST':
-      res = insert_note(request)
+      res = note_book.insert_note(request)
       if res ==0:
-         return f'''<h3>Note successfully saved </h2>
-                       <p></p> 
-                       <p align = 'center'><a href="./add_note">Add one more note</a></p>
-                       <p></p>
-                       <p align = 'center'><a href="./bot-command">Return to BOT embrace</a></p>'''
+         return render_template('html/add_note/OK.html') 
       else:
          return html_error(res)
    else:
@@ -396,7 +400,7 @@ def edit_note():
    if request.method == 'POST':
       keywords = clean_search_str(request.form.get('Keywords'))
       for k in [keyword.strip() for keyword in keywords.split(",")]:
-         result = find_note_query(k)
+         result = note_book.get_notes(k)
       return render_template('html/edit_notes/edit_notes_found.html', result = result) 
    else:    
       return render_template('html/edit_notes/edit_notes_search.html')  
@@ -407,16 +411,11 @@ def save_note(id):
    if request.method == 'POST':
       res = note_update(id, request) 
       if  res== 0:
-         return f'''<h3>Note successfully updated</h2>
-                   <p></p> 
-                   <p align = 'center'><a href="/add-note">Add one more note</a></p>
-                   <p></p>
-                   <p align = 'center'><a href="/bot-command">Return to BOT embrace</a></p>                   
-                   '''
+         return render_template('html/edit_notes/OK.html') 
       else:
          return html_error(res) 
    else:
-      result =find_note_query_id(id)
+      result = note_book.get_note_by_id(id)
       return render_template('html/edit_notes/edit_notes_save.html', res = result)        
                     
     
@@ -426,7 +425,7 @@ def delete_contact():
    if request.method == 'POST':
       keywords = clean_search_str(request.form.get('Keywords'))
       for k in [keyword for keyword in keywords.strip().split(" ")]:
-         results.extend(contact_query(k))
+         results.extend(contact_book.get_contacts(k))
          return render_template('html/delete_user/user_to_delete.html', result = results) 
    else:
       return render_template('html/find_user/find_user.html')
@@ -434,18 +433,9 @@ def delete_contact():
       
 @app.route('/delete_contact/<id>', methods=['GET', 'POST'])
 def contact_delete_(id):
-   res = delete_contact_by_id (id)
+   res = contact_book.delete_contact(id)
    if res ==0: 
-      return f'''
-               <html>
-               <h2 align = 'center'> Contact ID = {id} succesfully deleted</h2>
-               <p></p> 
-               <p align = 'center'> <a href="/delete_contact">Delete one more contact</a></p>
-               <p></p>
-               <p align = 'center'><a href="/bot-command">Return to BOT embrace</a></p>
-               
-               </html>
-               '''
+      return render_template('html/delete_user/OK.html', id = id)
    else:
       return html_error(res)
 
@@ -457,7 +447,7 @@ def delete_note():
    if request.method == 'POST':
       keywords = clean_search_str(request.form.get('Keywords'))
       for k in [keyword.strip() for keyword in keywords.split(",")]:
-         result = find_note_query(k)
+         result = note_book.get_notes(k)
          return render_template('html/delete_note/delete_notes_found.html', result = result)  
    else:
       return render_template('html/delete_note/delete_notes_search.html') 
@@ -467,15 +457,7 @@ def delete_note():
 def note_delete_(id):
    res = delete_note_id(id)
    if res == 0:
-      return f'''
-               <html>
-               <h2 align = 'center'> Note ID = {id} succesfully deleted</h2>
-               <p></p> 
-               <p><a href="/delete_note">Delete one more note</a></p>
-               <p></p>
-               <p><a href="/bot-command">Return to BOT embrace</a></p>
-               </html>
-               '''
+      return render_template('html/delete_note/OK.html' , id = id) 
    else:
       return html_error(res)                
 
@@ -500,9 +482,10 @@ def next_birthday():
    if request.method == 'POST':
       try:
          period = int(request.form.get('Period'))
+         assert period > 0 and period < 365
       except:
-         return get_period("You could use numbers only")  
-      res = get_birthdays(period)
+         return get_period("You could use numbers only, the period should be > 0 and < 365")  
+      res = contact_book.get_birthday(period)
       return render_template('html/list_birthday/user_found.html',
                                 days = request.form.get('Period'),
                                 result = res)
@@ -539,8 +522,21 @@ command_history = {"command":"response"}
 
 @app.route('/', methods=['GET', 'POST'])
 def start_page():
-   return redirect('/bot-command')   
+   if request.method == 'POST':
+      option = request.form['db']
+      global contact_book
+      global note_book
+      if option =='mongodb':
+         contact_book = Mongo_contact_book(contact_db, counter_db)
+         note_book = Mongo_notebook(note_db, counter_db)
+      else:
+         contact_book = PostgreSQL_contact_book(session)
+         note_book = PostgreSQL_notebook(session)
+      return redirect('/bot-command')     
 
+   else:
+      return render_template('html/index.html')
+   
 @app.route('/bot-command', methods=['GET', 'POST'])
 def form_example():
    # handle the POST request
@@ -559,4 +555,6 @@ def form_example():
       return render_template('html/bot_page.html',command_history = command_history)
     
 if __name__ == "__main__":
+     contact_book = None 
+     note_book = None
      app.run(debug=True)

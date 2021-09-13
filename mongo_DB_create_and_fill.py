@@ -79,16 +79,97 @@ def insert_notes():
         note_db.insert_many(notes)            
                 
     except Exception as e:
-        print(e)  
+        print(e)
+
+class Contact():
+    def __init__(self, json):
+        self.name = json['name']
+        self.contact_id = json['contact_id']
+        self.birthday = json['birthday'].date().strftime('%d.%m.%Y')
+        #self.birthday= datetime.strptime(str(json['birthday']), '%d.%m.%Y').date()
+        self.phone = json['phone']
+        self.email = json['email']
+        self.zip = json['address']['zip']
+        self.country = json['address']['country']
+        self.region = json['address']['region']
+        self.city = json['address']['city']
+        self.street = json['address']['street']
+        self.house = json['address']['house']
+        self.apartment = json['address']['apartment']
+        self.selebrate =""
         
+        
+def get_birthdays(period):
+    contacts = []
+    max_id = counter_db.find_one({"counter_name": 'contact_id'},{'value':1})['value']
+    contacts = []
+    counter = 0
+    while True:
+        contact = contact_db.find_one({"contact_id":counter})
+        counter+=1
+        birthday = contact['birthday']
+        d = datetime(birthday.year, 1,1,0)
+        d1 = datetime(datetime.today().year, 1,1,0)
+        delta = d1-d
+        birthday_this_year = birthday+delta
+        temp_contact = Contact(contact)
+        if birthday_this_year >= datetime.today() and  birthday_this_year<=datetime.today()+timedelta(days = period):
+            temp_contact.celebrate = birthday_this_year.date()
+            contacts.append(temp_contact)
+        print(temp_contact.contact_id," ", max_id," ", type(temp_contact.contact_id), " ", type(max_id))    
+        if temp_contact.contact_id == max_id:
+            break
+    return contacts  
 
 if __name__ == '__main__':                          
-    contact_db.drop_indexes()
-    note_db.drop_indexes()
-    counter_db.delete_many({})
-    contact_db.delete_many({})
-    note_db.delete_many({})
-    insert_users()
-    insert_notes()
-    result = contact_db.create_index([('contact_id', 1)], unique = True) 
-    result = note_db.create_index([('note_id', 1)], unique = True) 
+    #contact_db.drop_indexes()
+    #note_db.drop_indexes()
+    #rgx = re.compile('.* .*', re.IGNORECASE)
+    #counter_db.delete_many({})
+    #contact_db.delete_many({})
+    #note_db.delete_many({})
+    #insert_users()
+    #insert_notes()
+    #res = contact_db.index_information()
+    #result = contact_db.create_index([('contact_id', 1)], unique = True) 
+    #print(result)
+    #result = note_db.create_index([('note_id', 1)], unique = True) 
+    #print(result)
+    #start_date = date.today()
+    #print(d)
+    #period = request.form.get('Period')
+    #get_birthdays(10)
+
+    '''res = contact_db.aggregate([{
+                                 "$match": {"$expr":
+                                       {'$eq': [{'$substr': [{"$dateToString":{"format": "%d.%m.%Y", "date": "$birthday"}}, 0 ,5]},'29.03']}
+                                           } 
+                                           
+                                 }
+                               ])
+
+    res1 = contact_db.aggregate([{
+                                 "$match": {"$expr":
+                                       {'$in': [{'$substr': [{"$dateToString":{"format": "%d.%m.%Y", "date": "$birthday"}}, 0 ,5]},
+                                                [(date_).strftime("%d.%m.%Y")[0:5] for date_ in date+i for i in range(0,period)]]}
+                                           } 
+                                           
+                                 }
+                               ])'''
+    
+    dates = [datetime.today+timedelta(days = i) for i in range(2)]
+    print  (dates)
+       
+
+    
+    #res = contact_db.find({{'$dateToString':{'format':"%Y-%m-%d", date:"$birthday"}}:" "})
+    #res =contact_db.find_one({{'$dateToString':{'date': datetime.now()}} : str(datetime.today())})
+    for r in res1:
+        print(r)
+    
+    #for res in contact_db.find({}).sort("birthday"):
+    #print(res)
+    #    $lt: ISODate("2010-05-01T00:00:00.000Z")})
+    #print(res, type(res)==type(""))
+    #print([elem for elem in counter_db.find({"counter_name":"note_id"})])
+    #print([elem for elem in contact_db.find({}).limit(1)])

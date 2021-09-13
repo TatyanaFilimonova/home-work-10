@@ -1,3 +1,4 @@
+from collections import deque
 from inspect import signature, getcallargs
 import time
 import redis
@@ -21,7 +22,7 @@ def LRU_cache(max_len):
                    param_dict[param] = bnd.arguments[param]
                else:
                    param_dict[param] = sig.parameters[param].default
-            lru_cache ='cache'
+            lru_cache =str(func_to_cache)
             hash_=str(param_dict).encode()
             members = r.lrange(lru_cache,0,-1)
             if hash_ not in members:
