@@ -9,6 +9,7 @@ from bson.objectid import ObjectId
 import re
 from SQL_alchemy_classes import *
 from sqlalchemy import create_engine, or_, update, delete
+from LRU_cache import *
 
 class Contactbook(ABC):
 
@@ -51,6 +52,7 @@ class Mongo_contact_book(Contactbook):
         self.contact_db = contact_db
         self.counter_db = counter_db
 
+    @LRU_cache(1)
     def get_all_contacts(self):
         self.contacts = []
         try:
@@ -61,6 +63,7 @@ class Mongo_contact_book(Contactbook):
         except Exception as e:
             raise e
 
+    @LRU_cache(10)
     def get_contacts(self, keys):
         self.contacts = []
         try:
@@ -72,6 +75,7 @@ class Mongo_contact_book(Contactbook):
         except Exception as e:
             raise e
 
+    @LRU_cache(10)
     def get_contact_details(self, id):
         res = self.contact_db.find_one({'contact_id':int(id)})
         if res!= None:
@@ -80,6 +84,7 @@ class Mongo_contact_book(Contactbook):
         else:
             return res    
 
+    @LRU_cache(100)
     def get_birthday(self, period):
         self.contacts = []
         result= self.contact_db.aggregate([{
@@ -102,7 +107,7 @@ class Mongo_contact_book(Contactbook):
             self.contacts = sorted(self.contacts, key = lambda x: datetime.strptime(x.birthday[0:6]+str(datetime.today().year),'%d.%m.%Y'))
         return self.contacts 
 
-
+    @LRU_cache_invalidate('get_contacts', 'get_all_contacts', 'get_contact_details', 'get_birthday')
     def update_contact(self, id, contact):
         try:
             self.contact_db.replace_one(
@@ -127,7 +132,7 @@ class Mongo_contact_book(Contactbook):
             return 0     
         except Exception as e:
             return e
-
+    @LRU_cache_invalidate('get_contacts', 'get_all_contacts', 'get_contact_details', 'get_birthday')
     def insert_contact(self, contact):
         try:
             counter = self.counter_db.find_one({"counter_name": 'contact_id'},{'value':1})['value']
@@ -157,6 +162,7 @@ class Mongo_contact_book(Contactbook):
         except Exception as e:
             return "Some problem"
 
+    @LRU_cache_invalidate('get_contacts', 'get_all_contacts', 'get_contact_details', 'get_birthday')
     def delete_contact(self, id):
         try:
             self.contact_db.delete_one({'contact_id':int(id)})
@@ -171,32 +177,43 @@ class PostgreSQL_contact_book(Contactbook):
         self.contacts = []
         self.session = session
         
+    @LRU_cache(10)
     def get_all_contacts(self):
         self.contacts = []
         try:
-            result =self.session.query(Contact.contact_id, Contact.name)
-            return result
+            result =self.session.query(Contact.contact_id, Contact.name, Contact.birthday)
+            for r in result:
+                self.contacts.append(Postgres_contact(r))
+            return self.contacts
         except Exception as e:
             raise e
 
+    @LRU_cache(10)
     def get_contacts(self, key):
+        self.contacts = []
         result = self.session.query(
-                    Contact.contact_id, Contact.name
+                    Contact.contact_id, Contact.name, Contact.birthday
                     ).join(Phone_).filter(
                         or_(func.lower(Contact.name).like(func.lower(f"%{key}%")
                         ), func.lower(Phone_.phone).like(func.lower(f"%{key}%"))))
-        return result
+        for r in result:
+            self.contacts.append(Postgres_contact(r))
+        return self.contacts
 
+
+    @LRU_cache(10)
     def get_contact_details(self, id):
         contact = self.session.query(Contact.contact_id, Contact.name, Contact.birthday).filter(Contact.contact_id == id)
         phone   = self.session.query(Phone_.phone).filter(Phone_.contact_id == id)
         email   = self.session.query(Email_.email).filter(Email_.contact_id == id)
         address = self.session.query(Address_).filter(Address_.contact_id == id)
-        return Postgres_contact(contact[0], phone, email[0], address[0])   
+        return Postgres_contact_details(contact[0], phone, email[0], address[0])   
 
+    @LRU_cache(100)
     def get_birthday(self, period):
+        self.contacts=[]
         sql_text=f'''
-                select contact_id, name,  date(birthday+(date_trunc('year', now()) - date_trunc('year', birthday)))  as celebrate from contact
+                select contact_id, name, birthday, date(birthday+(date_trunc('year', now()) - date_trunc('year', birthday)))  as celebrate from contact
                 where 
                 birthday+(date_trunc('year', now()) - date_trunc('year', birthday)) 
                 between 
@@ -205,9 +222,13 @@ class PostgreSQL_contact_book(Contactbook):
                 date_trunc('day', now()+interval '{period} day');
                 '''    
         result = self.session.execute(sql_text).fetchall()
-        return result 
+        for r in result:
+            contact = Postgres_contact(r)
+            contact.celebrate = r.celebrate
+            self.contacts.append(contact)
+        return self.contacts 
 
-
+    @LRU_cache_invalidate('get_contacts', 'get_all_contacts', 'get_contact_details', 'get_birthday')
     def update_contact(self, id, contact):
         try:
              self.session.execute(update(Contact, values={
@@ -244,7 +265,8 @@ class PostgreSQL_contact_book(Contactbook):
             return e
         finally:
             self.session.rollback()
-        
+
+    @LRU_cache_invalidate('get_contacts', 'get_all_contacts', 'get_contact_details', 'get_birthday')    
     def insert_contact(self, contact):
         try:
             contact_= Contact(name = contact.name,
@@ -279,7 +301,7 @@ class PostgreSQL_contact_book(Contactbook):
             self.session.rollback()
         return 0    
 
-
+    @LRU_cache_invalidate('get_contacts', 'get_all_contacts', 'get_contact_details', 'get_birthday')
     def delete_contact(self, id):
         try:
             stmt = delete(Contact).where(Contact.contact_id == id)
@@ -334,6 +356,14 @@ class Mongo_contact(Contact_abstract):
 
 class Postgres_contact(Contact_abstract):
 
+    def __init__(self, contact):
+        self.contact_id = contact.contact_id
+        self.name = contact.name
+        self.birthday = contact.birthday
+        
+
+class Postgres_contact_details(Postgres_contact):
+
     def __init__(self, contact, phone, email, address):
         self.contact_id = contact.contact_id
         self.name = contact.name
@@ -348,7 +378,7 @@ class Postgres_contact(Contact_abstract):
         self.city =  address.city
         self.street = address.street
         self.house = address.house
-        self.apartment = address. apartment           
+        self.apartment = address. apartment         
 
         
         

@@ -11,6 +11,7 @@ from SQL_alchemy_classes import *
 from sqlalchemy import create_engine, or_, update, delete
 from  flask import Flask, redirect, url_for
 from flask import request
+from LRU_cache import *
 
 class Notebook(ABC):
 
@@ -50,6 +51,7 @@ class Mongo_notebook(Notebook):
         self.notes_db = notes_db
         self.counter_db = counter_db
 
+    @LRU_cache(1)
     def get_all_notes(self):
         self.notes = []
         try:
@@ -59,7 +61,8 @@ class Mongo_notebook(Notebook):
             return self.notes    
         except Exception as e:
             raise e
-
+        
+    @LRU_cache(10)
     def get_notes(self, key):
         self.notes = []
         rgx = re.compile(f'.*{key}.*', re.IGNORECASE)
@@ -67,7 +70,8 @@ class Mongo_notebook(Notebook):
         for res in result:
             self.notes.append(Mongo_note(res))
         return self.notes
-
+    
+    @LRU_cache(10)
     def get_note_by_id(self, id):
         result = self.notes_db.find_one({'note_id':int(id)})
         if result!=None:
@@ -76,7 +80,7 @@ class Mongo_notebook(Notebook):
             print(f"Result is {result}, id = {id}, type ID = {type(id)}")
         return None
 
-    
+    @LRU_cache_invalidate('get_notes', 'get_all_notes', 'get_note_by_id')
     def update_note(self, id, request):
         try:
             self.note_db.replace_one({'note_id':int(id)},
@@ -89,7 +93,8 @@ class Mongo_notebook(Notebook):
             return 0
         except Exception as e:
             return e
-
+        
+    @LRU_cache_invalidate('get_notes', 'get_all_notes')
     def insert_note(self, request):
         try:        
             counter = self.counter_db.find_one({"counter_name": 'note_id'},{'value':1})['value']
@@ -107,7 +112,8 @@ class Mongo_notebook(Notebook):
             return 0
         except Exception as e:
             return e
-
+        
+    @LRU_cache_invalidate('get_notes', 'get_all_notes', 'get_note_by_id')
     def delete_note(self, id):
         try:
             self.note_db.delete_one({'note_id':int(id)})
@@ -121,24 +127,34 @@ class PostgreSQL_notebook(Notebook):
     def __init__(self, session = None):
         self.session = session
         
+    @LRU_cache(1)
     def get_all_notes(self):
-        return self.session.query(Note_.note_id, Note_.keywords, Text.text).join(Text)
+        self.notes= []
+        result = self.session.query(Note_.note_id, Note_.keywords, Text.text, Note_.created_at).join(Text)
+        for r in result:
+            self.notes.append(Postgres_note(r))
+        return self.notes    
 
+    @LRU_cache(10)
     def get_notes(self, key):
-        res = self.session.query(
-                    Note_.note_id, Note_.keywords, Text.text
+        self.notes= []
+        result = self.session.query(
+                    Note_.note_id, Note_.keywords, Text.text, Note_.created_at
                     ).join(Text).filter(
                         or_(func.lower(Note_.keywords).like(func.lower(f"%{key}%")
                         ), func.lower(Text.text).like(func.lower(f"%{key}%"))))
-        return res
-
+        for r in result:
+            self.notes.append(Postgres_note(r))
+        return self.notes    
+    
+    @LRU_cache(10)
     def get_note_by_id(self, id):
         result = self.session.query(
-                    Note_.note_id, Note_.keywords, Text.text
+                    Note_.note_id, Note_.keywords, Text.text, Note_.created_at
                     ).join(Text).filter(Note_.note_id == id)
-        return result[0]
+        return Postgres_note(result[0])
 
-    
+    @LRU_cache_invalidate('get_notes', 'get_all_notes', 'get_note_by_id')
     def update_note(self, id, request):
         try:
             keywords = request.form.get('Keywords')
@@ -150,7 +166,8 @@ class PostgreSQL_notebook(Notebook):
         except Exception as e:
             self.session.rollback()
             return e
-
+        
+    @LRU_cache_invalidate('get_notes', 'get_all_notes')
     def insert_note(self, request):
         try:        
             keywords = request.form.get('Keywords')
@@ -166,6 +183,7 @@ class PostgreSQL_notebook(Notebook):
             self.session.rollback()
             return e
 
+    @LRU_cache_invalidate('get_notes', 'get_all_notes', 'get_note_by_id')
     def delete_note(self, id):
         try:
             stmt = delete(Note_).where(Note_.note_id == id)
@@ -196,11 +214,11 @@ class Mongo_note(Note_abstract):
 
 class Postgres_note(Note_abstract):
 
-    def __init__(self, note, text):
+    def __init__(self, note):
         self.note_id = note.note_id
         self.created_at = note.created_at
         self.keywords=note.keywords
-        self.text = text.text
+        self.text = note.text
                 
         
 

@@ -23,9 +23,10 @@ import warnings
 warnings.filterwarnings('ignore')
 
 app = Flask(__name__)
+contact_book = None 
+note_book = None
 
 #####routes section############################
-
 
 @app.route('/hello_', methods=['GET', 'POST'])
 def hello_():
@@ -216,8 +217,11 @@ form_dict_temp = {"Name":{
                         },
                 }
 
+
 @app.route('/add_contact', methods=['GET', 'POST'])
 def add_contact():
+    if check_connection()!=True:
+        return redirect('/')
     form_dict = form_dict_temp
     if request.method == 'POST':
         form_dict = validate_contact_data(request, form_dict)
@@ -244,6 +248,8 @@ def render_template(path, **kwargs):
     
 @app.route('/edit_contact', methods=['GET', 'POST'])
 def edit_contact():
+    if check_connection()!=True:
+        return redirect('/')
     results = []
     if request.method == 'POST':
         keywords = clean_search_str(request.form.get('Keywords'))
@@ -256,6 +262,8 @@ def edit_contact():
 
 @app.route('/edit_contact/<id>', methods=['GET', 'POST'])
 def edit_contact_(id):
+   if check_connection()!=True:
+      return redirect('/')
    form_dict = form_dict_temp
    if request.method == 'POST':
       form_dict = validate_contact_data(request, form_dict)
@@ -284,9 +292,10 @@ def edit_contact_(id):
       form_dict["Apartment"]["value"] = contact.apartment
       return render_template('html/edit_user/edit_user.html', form_dict = form_dict)
 
-
 @app.route('/find_contact', methods=['GET', 'POST'])
 def find_contact():
+   if check_connection()!=True:
+      return redirect('/')
    results = []
    if request.method == 'POST':
       keywords = clean_search_str(request.form.get('Keywords'))
@@ -330,6 +339,8 @@ def clean_phone_str(phone):
         
 @app.route('/find_notes', methods=['GET', 'POST'])
 def find_notes():
+   if check_connection()!=True:
+      return redirect('/')
    results = []
    if request.method == 'POST':
       keywords = clean_search_str(request.form.get('Keywords'))
@@ -344,6 +355,8 @@ def find_notes():
 
 @app.route('/show_all_contacts', methods=['GET', 'POST'])
 def show_all_contacts():
+   if check_connection()!=True:
+      return redirect('/')
    if request.method == 'POST':
       return redirect('/bot-command')
    else:
@@ -359,6 +372,8 @@ def html_error(error):
 
 @app.route('/contact_detail/<id>', methods=['GET', 'POST'])
 def contact_detail(id):
+   if check_connection()!=True:
+      return redirect('/')
    contact = contact_book.get_contact_details(id)
    return render_template('html/user_details/user_details.html',
                             contact = contact,
@@ -370,6 +385,8 @@ def contact_detail(id):
          
 @app.route('/show_all_notes', methods=['GET', 'POST'])
 def show_all_notes ():
+   if check_connection()!=True:
+      return redirect('/')
    if request.method == 'POST':
       return redirect('/bot-command')
    else:
@@ -384,6 +401,8 @@ def help_():
 
 @app.route('/add_note', methods=['GET', 'POST'])
 def add_note():
+   if check_connection()!=True:
+      return redirect('/')
    if request.method == 'POST':
       res = note_book.insert_note(request)
       if res ==0:
@@ -396,6 +415,8 @@ def add_note():
 
 @app.route('/edit_note', methods=['GET', 'POST'])
 def edit_note():
+   if check_connection()!=True:
+      return redirect('/')
    res_list = []
    if request.method == 'POST':
       keywords = clean_search_str(request.form.get('Keywords'))
@@ -408,6 +429,8 @@ def edit_note():
         
 @app.route('/save_note/<id>', methods=['GET', 'POST'])
 def save_note(id):
+   if check_connection()!=True:
+      return redirect('/')
    if request.method == 'POST':
       res = note_update(id, request) 
       if  res== 0:
@@ -421,6 +444,8 @@ def save_note(id):
     
 @app.route('/delete_contact', methods=['GET', 'POST'])
 def delete_contact():
+   if check_connection()!=True:
+      return redirect('/')
    results = []
    if request.method == 'POST':
       keywords = clean_search_str(request.form.get('Keywords'))
@@ -433,6 +458,8 @@ def delete_contact():
       
 @app.route('/delete_contact/<id>', methods=['GET', 'POST'])
 def contact_delete_(id):
+   if check_connection()!=True:
+      return redirect('/')
    res = contact_book.delete_contact(id)
    if res ==0: 
       return render_template('html/delete_user/OK.html', id = id)
@@ -443,6 +470,8 @@ def contact_delete_(id):
 
 @app.route('/delete_note', methods=['GET', 'POST'])
 def delete_note():
+   if check_connection()!=True:
+      return redirect('/')
    res_list = []
    if request.method == 'POST':
       keywords = clean_search_str(request.form.get('Keywords'))
@@ -455,6 +484,8 @@ def delete_note():
 
 @app.route('/delete_note/<id>', methods=['GET', 'POST'])
 def note_delete_(id):
+   if check_connection()!=True:
+      return redirect('/')
    res = delete_note_id(id)
    if res == 0:
       return render_template('html/delete_note/OK.html' , id = id) 
@@ -478,6 +509,8 @@ def get_period(message=""):
 
 @app.route('/next_birthday', methods=['GET', 'POST'])
 def next_birthday():
+   if check_connection()!=True:
+      return redirect('/')
    message =""
    if request.method == 'POST':
       try:
@@ -533,12 +566,21 @@ def start_page():
          contact_book = PostgreSQL_contact_book(session)
          note_book = PostgreSQL_notebook(session)
       return redirect('/bot-command')     
-
    else:
       return render_template('html/index.html')
-   
+
+def check_connection():
+   global contact_book
+   global note_book
+   if contact_book == None or note_book == None:
+      return False
+   else:
+      return True
+
 @app.route('/bot-command', methods=['GET', 'POST'])
-def form_example():
+def bot():
+   if check_connection()!=True:
+      return redirect('/')
    # handle the POST request
    if request.method == 'POST':
       command = request.form.get('BOT command')
@@ -555,6 +597,4 @@ def form_example():
       return render_template('html/bot_page.html',command_history = command_history)
     
 if __name__ == "__main__":
-     contact_book = None 
-     note_book = None
      app.run(debug=True)
