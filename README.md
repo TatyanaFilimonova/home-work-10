@@ -8,6 +8,6 @@ Files:
 
 **LRU_cache.py** - LRU cache on REDIS implementation 
 
-**mongo_to_flask.py** - operations with MONGO: storing, searching and updating data
+**notes_data_classes.py contacts_data_classes.py** - base classes that implement access to DB (Mongo or Postgres by user choice): storing, searching and updating data
 
 **mongo_DB_create_and_fill.py** - creating data collections and fill them with Faker data
