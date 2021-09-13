@@ -359,15 +359,13 @@ class Postgres_contact(Contact_abstract):
     def __init__(self, contact):
         self.contact_id = contact.contact_id
         self.name = contact.name
-        self.birthday = contact.birthday
+        self.birthday = contact.birthday.strftime('%d.%m.%Y')
         
 
 class Postgres_contact_details(Postgres_contact):
 
     def __init__(self, contact, phone, email, address):
-        self.contact_id = contact.contact_id
-        self.name = contact.name
-        self.birthday = contact.birthday.strftime('%d.%m.%Y')
+        super().__init__(contact)
         self.phone=[]
         for p in phone:
             self.phone.append(p.phone)
