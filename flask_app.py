@@ -1,33 +1,31 @@
+#global packages
 from  flask import Flask, redirect, url_for
 from jinja2 import Template
 from flask import request
-from datetime import datetime, timedelta
-from datetime import date
 import time
-import math
 import re
-import json
-from neural_code import *
 import os
+import warnings 
+warnings.filterwarnings('ignore')
+
+#local packages
+from neural_code import *
 from LRU_cache import *
-from pymongo import MongoClient
-from bson.objectid import ObjectId
 from db_mongo import MONGO_DB, db, contact_db, counter_db, note_db
 from db_postgres import session
-
 from contacts_data_classes import *
 from notes_data_classes import *
 from validate import *
 
-import warnings 
-warnings.filterwarnings('ignore')
 
 app = Flask(__name__)
 contact_book = None 
 note_book = None
+command_history = {"command":"response"}
 
 #####routes section############################
 
+#Choose the DB engine (mongo or postgres)
 @app.before_request
 def before_request():
    global contact_book
@@ -58,14 +56,6 @@ def add_contact():
             pass
     return render_template('html/add_user/add_user.html', form_dict = form_dict)
   
-
-def render_template(path, **kwargs):
-   try:  
-      with open( path, 'r') as file:
-         t = Template(file.read())
-         return t.render(**kwargs)
-   except Exception as e:
-         return html_error(e)  
 
     
 @app.route('/edit_contact', methods=['GET', 'POST'])
@@ -123,21 +113,6 @@ def find_contact():
    else:
       return render_template('html/find_user/find_user.html')
 
-
-def clean_search_str(keywords):
-   keywords = (
-     keywords.replace("+","\+")
-            .replace("*", "\*")
-            .replace("{", "\{")
-            .replace("}", "\}")
-            .replace("[", "\[")
-            .replace("]", "\]")
-            .replace("?", "\?")
-            .replace("$", "\$")
-            .replace("'\'", "\\")
-             )
-   return keywords
-
         
 @app.route('/find_notes', methods=['GET', 'POST'])
 def find_notes():
@@ -161,12 +136,6 @@ def show_all_contacts():
       result = contact_book.get_all_contacts()
       return render_template('html/all_contacts/all_contacts.html', result = result) 
         
-        
-
-def html_error(error):
-   return render_template('html/error.html', error = error)
-
-
 
 @app.route('/contact_detail/<id>', methods=['GET', 'POST'])
 def contact_detail(id):
@@ -304,33 +273,6 @@ def next_birthday():
       return get_period()   
         
     
-exec_command = { 
-    "hello": [hello_,                  "hello:              Greetings", 0], 
-    "add contact":  [add_contact,      "add contact:        Add a new contact", 2], 
-    "edit contact": [edit_contact,     "edit contact:       Edit the contact detail", 2], 
-    "find contact": [find_contact,    "find contact:       Find the records by phone or name", 1], 
-    "find notes":   [find_notes,       "find notes:         Find the notes by text or keywords", 1], 
-    "show all contacts":[show_all_contacts, "show all contacts:  Print all the records of adress book, page by page", 0],
-    "show all notes":[show_all_notes,  "show all_notes:     Print all the records of adress book, page by page", 0], 
-    "help": [help_,                    "help:               Print a list of the available commands",0],  
-    "add note": [add_note,             "add note:           Add new text note ", 0],
-    "edit note": [edit_note,           "edit note:          Edit existing text note ", 0],
-    "delete contact": [delete_contact, "delete contact:     Delete contact", 2], 
-    "delete note": [delete_note,       "delete note:        Delete text note", 2], 
-    "sort notes": [sort_notes,         "sort note:          Sort of the notes by keywords", 2], 
-    "sort folder": [sort_folder,       "sort_folder:        Sort selected folder by file types", 2],
-    "next birthday": [next_birthday,   "next birthday:      Let you the contats with birthdays in specified period", 2],
-             }
-
-
-@LRU_cache (max_len = 10)         
-def listener(message):
-   ints = predict_class(message)
-   res = get_response(ints, intents)
-   return res[1]
-
-command_history = {"command":"response"}
-
 @app.route('/login', methods=['GET', 'POST'])
 def start_page():
    if request.method == 'POST':
@@ -363,6 +305,61 @@ def bot():
    # otherwise handle the GET request
    else:
       return render_template('html/bot_page.html',command_history = command_history)
+
+############## end of routes section #########################3
+
+exec_command = { 
+    "hello": [hello_,                  "hello:              Greetings", 0], 
+    "add contact":  [add_contact,      "add contact:        Add a new contact", 2], 
+    "edit contact": [edit_contact,     "edit contact:       Edit the contact detail", 2], 
+    "find contact": [find_contact,    "find contact:       Find the records by phone or name", 1], 
+    "find notes":   [find_notes,       "find notes:         Find the notes by text or keywords", 1], 
+    "show all contacts":[show_all_contacts, "show all contacts:  Print all the records of adress book, page by page", 0],
+    "show all notes":[show_all_notes,  "show all_notes:     Print all the records of adress book, page by page", 0], 
+    "help": [help_,                    "help:               Print a list of the available commands",0],  
+    "add note": [add_note,             "add note:           Add new text note ", 0],
+    "edit note": [edit_note,           "edit note:          Edit existing text note ", 0],
+    "delete contact": [delete_contact, "delete contact:     Delete contact", 2], 
+    "delete note": [delete_note,       "delete note:        Delete text note", 2], 
+    "sort notes": [sort_notes,         "sort note:          Sort of the notes by keywords", 2], 
+    "sort folder": [sort_folder,       "sort_folder:        Sort selected folder by file types", 2],
+    "next birthday": [next_birthday,   "next birthday:      Let you the contats with birthdays in specified period", 2],
+             }
+
+
+@LRU_cache (max_len = 10)         
+def listener(message):
+   ints = predict_class(message)
+   res = get_response(ints, intents)
+   return res[1]
+
+
+def render_template(path, **kwargs):
+   try:  
+      with open( path, 'r') as file:
+         t = Template(file.read())
+         return t.render(**kwargs)
+   except Exception as e:
+         return html_error(e)
+
+
+def clean_search_str(keywords):
+   keywords = (
+     keywords.replace("+","\+")
+            .replace("*", "\*")
+            .replace("{", "\{")
+            .replace("}", "\}")
+            .replace("[", "\[")
+            .replace("]", "\]")
+            .replace("?", "\?")
+            .replace("$", "\$")
+            .replace("'\'", "\\")
+             )
+   return keywords
+
+
+def html_error(error):
+   return render_template('html/error.html', error = error)
     
 if __name__ == "__main__":
      app.run(debug=True)
