@@ -3,7 +3,6 @@ from datetime import datetime, timedelta
 from datetime import date
 import time
 import os
-from db import MONGO_DB, db, contact_db, counter_db, note_db
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 import re
@@ -55,7 +54,7 @@ class Mongo_notebook(Notebook):
     def get_all_notes(self):
         self.notes = []
         try:
-            result = self.notes_db.find({})
+            result = self.notes_db.find({}).sort('note_id')
             for res in result:
                 self.notes.append(Mongo_note(res))
             return self.notes    
@@ -83,7 +82,9 @@ class Mongo_notebook(Notebook):
     @LRU_cache_invalidate('get_notes', 'get_all_notes', 'get_note_by_id')
     def update_note(self, id, request):
         try:
-            self.note_db.replace_one({'note_id':int(id)},
+            kw = request.form.get('Keywords')
+            kw = [k.strip() for k in kw.split(',')]
+            self.notes_db.replace_one({'note_id':int(id)},
                                    {'note_id':int(id),
                                     'created_at': datetime.today(),
                                     'keywords': request.form.get('Keywords'),
@@ -103,7 +104,7 @@ class Mongo_notebook(Notebook):
                           { "counter_name": 'note_id',
                             "value": counter+1}
                              )  
-            self.note_db.insert_one({
+            self.notes_db.insert_one({
             'note_id': (counter+1),
             'keywords': request.form.get('Keywords'),
             'text': request.form.get('Text'),
@@ -116,7 +117,7 @@ class Mongo_notebook(Notebook):
     @LRU_cache_invalidate('get_notes', 'get_all_notes', 'get_note_by_id')
     def delete_note(self, id):
         try:
-            self.note_db.delete_one({'note_id':int(id)})
+            self.notes_db.delete_one({'note_id':int(id)})
             return 0
         except Exception as e:
             return e
@@ -130,7 +131,9 @@ class PostgreSQL_notebook(Notebook):
     @LRU_cache(1)
     def get_all_notes(self):
         self.notes= []
-        result = self.session.query(Note_.note_id, Note_.keywords, Text.text, Note_.created_at).join(Text)
+        result = self.session.query(
+            Note_.note_id, Note_.keywords, Text.text, Note_.created_at
+            ).join(Text).order_by(Note_.note_id)
         for r in result:
             self.notes.append(Postgres_note(r))
         return self.notes    
@@ -208,7 +211,7 @@ class Mongo_note(Note_abstract):
 
     def __init__(self, json):
         self.note_id = json['note_id']
-        self.keywords ='#'+" #".join(json['keywords'])
+        self.keywords =','.join(json['keywords'])
         self.created_at = json['created_at']
         self.text = json['text']
 

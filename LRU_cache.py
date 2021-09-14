@@ -25,7 +25,10 @@ def LRU_cache(max_len):
                else:
                    param_dict[param] = sig.parameters[param].default
             lru_cache =func_to_cache.__name__
-            print(lru_cache)
+            with open( 'LRU.txt', 'a') as log:
+                log.write('---------------------------------------------\n') 
+                log.write(f'Start caching for {lru_cache}\n')
+                log.write('---------------------------------------------\n') 
             hash_=str(param_dict).encode()
             members = r.lrange(lru_cache,0,-1)
             if hash_ not in members:
@@ -49,16 +52,30 @@ def LRU_cache(max_len):
 
 def LRU_cache_invalidate(*function_names : str):
     def wrapper(func_to_invalidate):
+        with open( 'LRU.txt', 'a') as log:
+            log.write(f'Start wrapper for {func_to_invalidate}\n')
         def get_args(*args, **kwargs):
-            res = func_to_invalidate(*args, **kwargs)
-            for function in function_names:
-                param_hashes = r.lrange(function, 0, -1)
-                if param_hashes!=[]:
-                    for hash_ in param_hashes:
-                        r.delete(pickle.dumps((hash_, function)))
-                    r.ltrim(function, -1, -1)
-                    r.lpop(function)
-            return res
+            with open( 'LRU.txt', 'a') as log:
+                log.write('---------------------------------------------\n')       
+                res = func_to_invalidate(*args, **kwargs)
+                log.write(f'Start invalidate for : {func_to_invalidate}\n')
+                for function in function_names:
+                    log.write(f'Looking for function: {function}\n')
+                    param_hashes = r.lrange(function, 0, -1)
+                    log.write(f'Find next parameters for this function: {param_hashes}\n')
+                    if param_hashes!=[]:
+                        log.write('find some cached data:\n')
+                        for hash_ in param_hashes:
+                            log.write(str(r.get(pickle.dumps((hash_, function))))[0:10]+'\n')
+                            log.write('Try to delete it \n')
+                            r.delete(pickle.dumps((hash_, function)))
+                            if r.get(pickle.dumps((hash_, function))) == None:
+                                log.write('OK\n')
+                        r.ltrim(function, -1, -1)
+                        r.lpop(function)
+                log.write(f'Finish invalidate for : {func_to_invalidate}\n')
+                log.write('---------------------------------------------\n')
+                return res
         return get_args
     return wrapper
 

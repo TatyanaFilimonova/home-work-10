@@ -3,7 +3,6 @@ from datetime import datetime, timedelta
 from datetime import date
 import time
 import os
-from db import MONGO_DB, db, contact_db, counter_db, note_db
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 import re

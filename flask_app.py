@@ -9,7 +9,6 @@ import re
 import json
 from neural_code import *
 import os
-from mongo_to_flask import *
 from LRU_cache import *
 from pymongo import MongoClient
 from bson.objectid import ObjectId
@@ -419,7 +418,7 @@ def edit_note():
 @app.route('/save_note/<id>', methods=['GET', 'POST'])
 def save_note(id):
    if request.method == 'POST':
-      res = note_update(id, request) 
+      res = note_book.update_note(id, request) 
       if  res== 0:
          return render_template('html/edit_notes/OK.html') 
       else:
@@ -465,7 +464,7 @@ def delete_note():
 
 @app.route('/delete_note/<id>', methods=['GET', 'POST'])
 def note_delete_(id):
-   res = delete_note_id(id)
+   res = note_book.delete_note(id)
    if res == 0:
       return render_template('html/delete_note/OK.html' , id = id) 
    else:
@@ -537,8 +536,8 @@ def start_page():
       global contact_book
       global note_book
       if option =='mongodb':
-         contact_book = Mongo_contact_book(contact_db, counter_db)
          note_book = Mongo_notebook(note_db, counter_db)
+         contact_book = Mongo_contact_book(contact_db, counter_db)
       else:
          contact_book = PostgreSQL_contact_book(session)
          note_book = PostgreSQL_notebook(session)
